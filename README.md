@@ -1,29 +1,48 @@
 # Beta-Commands
+
 this is a version that plays the first search result without a search result message
 
-1. Always make a backup of your files before useing any of these commands
+1. Always make a backup of your files before using any of these commands
 2. replace the play.js file in /Master-Bot/commands/music folder
 3. Enjoy
 
+this alters lines 375 through 510
 
-
-this alters lines 372 through 499
 ```
+    // static createVideosResultsEmbed(namesArray, firstVideo) {
+  //   return new MessageEmbed()
+  //     .setColor('#ff0000')
+  //     .setTitle(`:mag: Search Results!`)
+  //     .addField(':notes: Result 1', namesArray[0])
+  //     .setURL(firstVideo.url)
+  //     .addField(':notes: Result 2', namesArray[1])
+  //     .addField(':notes: Result 3', namesArray[2])
+  //     .addField(':notes: Result 4', namesArray[3])
+  //     .addField(':notes: Result 5', namesArray[4])
+  //     .setThumbnail(firstVideo.thumbnails.high.url)
+  //     .setFooter('Choose a song by commenting a number between 1 and 5')
+  //     .addField(':x: Cancel', 'to cancel ');
+  // }
+
   static async searchYoutube(query, message, voiceChannel) {
-    const videos = await youtube
-      .searchVideos(query, 1)
-      .catch(async function () {
-        await message.say(
-          ":x: There was a problem searching the video you requested!"
-        );
-        return;
-      });
+    const videos = await youtube.searchVideos(query, 1).catch(async function() {
+      await message.reply(
+        ':x: There was a problem searching the video you requested!'
+      );
+      return;
+    });
     if (!videos) {
-      message.say(
+      message.reply(
         `:x: I had some trouble finding what you were looking for, please try again or be more specific.`
       );
       return;
     }
+    // if (videos.length < 5) {
+    //   message.reply(
+    //     `:x: I had some trouble finding what you were looking for, please try again or be more specific.`
+    //   );
+    //   return;
+    // }
     // const vidNameArr = [];
     // for (let i = 0; i < videos.length; i++) {
     //   vidNameArr.push(
@@ -37,18 +56,7 @@ this alters lines 372 through 499
     //   );
     // }
     // vidNameArr.push('cancel');
-    // const embed = new MessageEmbed()
-    //   .setColor('#ff0000')
-    //   .setTitle(`:mag: Search Results!`)
-    //   .addField(':notes: Result 1', vidNameArr[0])
-    //   .setURL(videos[0].url)
-    //   .addField(':notes: Result 2', vidNameArr[1])
-    //   .addField(':notes: Result 3', vidNameArr[2])
-    //   .addField(':notes: Result 4', vidNameArr[3])
-    //   .addField(':notes: Result 5', vidNameArr[4])
-    //   .setThumbnail(videos[0].thumbnails.high.url)
-    //   .setFooter('Choose a song by commenting a number between 1 and 5')
-    //   .addField(':x: Cancel', 'to cancel ');
+    // const embed = PlayCommand.createVideosResultsEmbed(vidNameArr, videos[0]);
     // var songEmbed = await message.channel.send({ embed });
     // message.channel
     //   .awaitMessages(
@@ -71,25 +79,32 @@ this alters lines 372 through 499
     //     }
     youtube
       .getVideoByID(videos[0].id)
-      .then(function (video) {
-        // // can be uncommented if you don't want the bot to play live streams
-        // if (video.raw.snippet.liveBroadcastContent === 'live') {
+      .then(function(video) {
+        // if (
+        //   video.raw.snippet.liveBroadcastContent === 'live' &&
+        //   !playLiveStreams
+        // ) {
         //   songEmbed.delete();
-        //   return message.say("I don't support live streams!");
-        // }
-
-        // // can be uncommented if you don't want the bot to play videos longer than 1 hour
-        // if (video.duration.hours !== 0) {
-        //   songEmbed.delete();
-        //   return message.say('I cannot play videos longer than 1 hour');
-        // }
-
-        // // can be uncommented if you don't want to limit the queue
-        // if (message.guild.musicData.queue.length > 10) {
-        //   songEmbed.delete();
-        //   return message.say(
-        //     'There are too many songs in the queue already, skip or wait a bit'
+        //   message.reply(
+        //     'Live streams are disabled in this server! Contact the owner'
         //   );
+        //   return;
+        // }
+
+        // if (video.duration.hours !== 0 && !playVideosLongerThan1Hour) {
+        //   songEmbed.delete();
+        //   message.reply(
+        //     'Videos longer than 1 hour are disabled in this server! Contact the owner'
+        //   );
+        //   return;
+        // }
+
+        // if (message.guild.musicData.queue.length > maxQueueLength) {
+        //   songEmbed.delete();
+        //   message.reply(
+        //     `The queue hit its limit of ${maxQueueLength}, please wait a bit before attempting to add more songs`
+        //   );
+        //   return;
         // }
         message.guild.musicData.queue.push(
           PlayCommand.constructSongObj(video, voiceChannel, message.member.user)
@@ -104,25 +119,19 @@ this alters lines 372 through 499
           // if (songEmbed) {
           //   songEmbed.delete();
           // }
-          const addedEmbed = new MessageEmbed()
-            .setColor("#ff0000")
-            .setTitle(`:musical_note: ${video.title}`)
-            .addField(
-              `Has been added to queue. `,
-              `This song is #${message.guild.musicData.queue.length} in queue`
-            )
-            .setThumbnail(video.thumbnails.high.url)
-            .setURL(video.url);
-          message.say(addedEmbed);
+          // Added song to queue message (search)
+          PlayCommand.createResponse(message)
+            .addField('Added to Queue', `:new: [${video.title}](${video.url})`)
+            .build();
           return;
         }
       })
-      .catch(function () {
+      .catch(function() {
         // if (songEmbed) {
         //   songEmbed.delete();
         // }
-        message.say(
-          ":x: An error has occured when trying to get the video ID from youtube."
+        message.reply(
+          ':x: An error has occurred when trying to get the video ID from youtube.'
         );
         return;
       });
@@ -131,10 +140,9 @@ this alters lines 372 through 499
     //   if (songEmbed) {
     //     songEmbed.delete();
     //   }
-    //   message.say(
+    //   message.reply(
     //     ':x: Please try again and enter a number between 1 and 5 or cancel.'
     //   );
     //   return;
     // });
-  }
-  ```
+```
